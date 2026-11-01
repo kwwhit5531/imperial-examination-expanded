@@ -1,5 +1,11 @@
 # Imperial Examination Expanded
 
+## Current development expansion
+
+The working source now contains **15 events**: nine candidate events and six events for the **Assist Examination** intent. See [the event catalogue](EVENT_PLAN.md) for the twelve additions. Candidate events occur during the active local examination; assistance events occur during local assembly/preparation. Both roles use 14-day spacing and per-event repetition guards. The new assistance pool has a 35% weekly chance; the candidate pool retains 20%.
+
+The expanded structural validator passes (15 events, 87 localization keys). Runtime testing of the expansion is pending. The prototype ZIP and the historical results below describe the original three-event build, not this expanded source. Restart CK3 to load changed scripts; use the isolated profile for testing.
+
 Three-event prototype for Crusader Kings III **1.20.1.2 (Crozier)** with **All Under Heaven**. English localization is included. This is the first implementation milestone of a planned 15-event expansion.
 
 [Download the installable prototype ZIP](packages/Imperial_Examination_Expanded_Prototype_0.1.0.zip). Full gameplay validation is still pending; see [testing status](TESTING.md).

@@ -1,5 +1,11 @@
 # Prototype validation
 
+## Expansion status — 2026-11-01
+
+Working source expanded to 15 events and 87 localization keys; structural validation passes. Historical results below apply to the original three-event prototype only. The user supplied a screenshot of A Passage Between Us displaying in a local examination; whether it was naturally dispatched was not confirmed.
+
+New candidate IDs: iee_examination.0004 through .0009. New assistant IDs: iee_examination.0010 through .0015. Test assistants with the Assist Examination intent during active local assembly and preparation, not the examination phase. Confirm natural dispatch, all choices, paid choices hidden below five gold, unchanged candidate scores for assistance choices, 14-day spacing, and rejection after leaving or changing role. Check negative cases in capital/palace activities too. Preserve an assembly-entry save for assistant testing and an examination-entry save for candidate testing. All new runtime checks remain pending.
+
 Target: installed CK3 1.20.1.2 (Crozier), Steam build 26046173, All Under Heaven. Test date: 2026-10-31.
 
 ## Reproducible structural check

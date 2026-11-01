@@ -68,12 +68,17 @@ def main():
     event_entries = parsed[event_path]
     assert one(event_entries, "namespace") == "iee_examination"
     events = {k: blocks(v) for k, _, v in event_entries if k.startswith("iee_examination.")}
-    assert set(events) == {f"iee_examination.{i:04d}" for i in range(1, 4)}
+    # Require every expected encounter, including the original three. An ID is
+    # the game's internal name, not the title displayed to the player.
+    assert set(events) == {f"iee_examination.{i:04d}" for i in range(1, 16)}
     for name, event in events.items():
         assert one(event, "type") == "activity_event", name
         assert one(blocks(one(event, "cooldown")), "months") == "12", name
         trigger = one(event, "trigger")
-        assert "iee_narrative_available_trigger" in trigger, name
+        # IDs 0010-0015 belong to assistants; 0001-0009 belong to candidates.
+        # Verify each event uses the checklist for its intended audience.
+        gate = "iee_assistant_available_trigger" if int(name.rsplit('.', 1)[1]) >= 10 else "iee_narrative_available_trigger"
+        assert gate in trigger, name
         assert any(t.startswith("var:iee_seen_") for t in trigger), name
         assert "iee_mark_narrative_seen_effect" in one(event, "immediate"), name
         assert sum(k == "option" for k, _, _ in event) >= 3, name
@@ -95,7 +100,25 @@ def main():
     child = blocks(one(hook, "iee_examination_narrative_pulse"))
     pool = blocks(one(child, "random_events"))
     assert one(pool, "chance_to_happen") == "20"
-    assert {v for k, _, v in pool if k.isdigit()} == set(events)
+    assert {v for k, _, v in pool if k.isdigit()} == {f"iee_examination.{i:04d}" for i in range(1, 10)}
+    # Assistants receive the assembly/preparation callback. Check that we only
+    # attach our child pool, leaving the base game's own event selection intact.
+    assistant_hook = blocks(one(hook, "imperial_examination_pulse"))
+    assert [k for k, _, _ in assistant_hook] == ["on_actions"]
+    assert one(assistant_hook, "on_actions") == ["iee_assistant_narrative_pulse"]
+    assistant = blocks(one(hook, "iee_assistant_narrative_pulse"))
+    assert "iee_assistant_available_trigger" in one(assistant, "trigger")
+    assistant_pool = blocks(one(assistant, "random_events"))
+    assert {v for k, _, v in assistant_pool if k.isdigit()} == {f"iee_examination.{i:04d}" for i in range(10, 16)}
+    # Assistance rewards must not invoke our candidate-score helper, either
+    # when a panel opens or when a button is clicked. This is a static check;
+    # it cannot prove every possible runtime effect inside the actual game.
+    for name, event in events.items():
+        if int(name.rsplit('.', 1)[1]) >= 10:
+            assert "iee_adjust_performance_effect" not in one(event, "immediate")
+            for key, _, value in event:
+                if key == "option":
+                    assert "iee_adjust_performance_effect" not in value
 
     effects = parsed[MOD / "common/scripted_effects/iee_examination_effects.txt"]
     score = one(effects, "iee_adjust_performance_effect")

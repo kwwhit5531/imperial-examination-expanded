@@ -58,3 +58,37 @@ iee_has_examiner_trigger = {
         }
     }
 }
+
+# ASSISTANT ELIGIBILITY: this checklist permits events, but does not cause one by itself.
+iee_assistant_available_trigger = {
+    # Require the All Under Heaven DLC used by the examination system.
+    has_tgp_dlc_trigger = yes
+    # The recipient must still be alive.
+    is_alive = yes
+    # An examination activity must have been supplied by the callback.
+    exists = scope:activity
+    # The recipient must still belong to this exact activity; ?= handles a missing reference safely.
+    involved_activity ?= scope:activity
+    # Require physical presence, excluding travel and characters who have left.
+    location = scope:activity.activity_location
+    # Require the actual Assist Examination intent, not a prior passing result.
+    has_activity_intent = exam_assist_exam_intent
+    # Exclude registered candidates, even if their intent has changed.
+    NOT = { is_in_guest_subset = { name = entrants } }
+    # Wait until the 14-day break after any previous mod encounter has expired.
+    NOT = { has_character_flag = iee_narrative_spacing }
+    # The following checks inspect the activity rather than the character.
+    scope:activity = {
+        # Limit this expansion to local examinations.
+        has_activity_type = activity_local_examination
+        # Exclude phase transitions; the current phase must actually be active.
+        is_current_phase_active = yes
+        # Either of these two phases is allowed. The examination itself is excluded.
+        OR = {
+            # Assembly: arrivals and initial arrangements.
+            has_current_phase = local_examination_phase_assembly
+            # Preparation: getting ready before the actual papers.
+            has_current_phase = local_examination_phase_preparation
+        }
+    }
+}

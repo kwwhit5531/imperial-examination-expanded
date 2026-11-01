@@ -1,4 +1,15 @@
-﻿# Additive extension, as documented in vanilla common/on_action/_on_actions.info.
+﻿# EVENT DELIVERY GUIDE
+# Vanilla calls an on_action at a scheduled moment, like a weekly activity tick.
+# Our on_actions entries attach an extra check to those existing callbacks.
+# The candidate callback runs during the exam; the general pulse runs during
+# assembly/preparation and also reaches assistants. Each child checks its role.
+# chance_to_happen is the pool's percentage chance on an eligible weekly tick.
+# The numbers beside event IDs are relative selection weights, not percentages:
+# equal weights give eligible events equal chances within this mod pool.
+# Eligibility, cooldowns, and the shared 14-day gap can prevent any event.
+# No eligible event means no encounter; this is not a guaranteed weekly story.
+
+# Additive extension, as documented in vanilla common/on_action/_on_actions.info.
 # Do not replace the vanilla random_events block: it contains formal exam papers.
 imperial_examination_exam_entrant_events = {
     on_actions = { iee_examination_narrative_pulse }
@@ -7,9 +18,34 @@ imperial_examination_exam_entrant_events = {
 iee_examination_narrative_pulse = {
     trigger = { iee_narrative_available_trigger = yes }
     random_events = {
+        # Candidate pool: 20% chance to attempt a supplemental encounter.
         chance_to_happen = 20
-        100 = iee_examination.0001
-        100 = iee_examination.0002
-        100 = iee_examination.0003
+        100 = iee_examination.0001 # A Passage Between Us
+        100 = iee_examination.0002 # A Fold of Paper
+        100 = iee_examination.0003 # A Word Out of Place
+        100 = iee_examination.0004 # The Rain Between the Lines
+        100 = iee_examination.0005 # A Name I Must Not Write
+        100 = iee_examination.0006 # The Last Blank Space
+        100 = iee_examination.0007 # The Borrowed Cadence
+        100 = iee_examination.0008 # A Bell Beyond the Wall
+        100 = iee_examination.0009 # An Answer Without Ornament
+    }
+}
+
+# The vanilla assembly/preparation pulse reaches assisting characters too.
+imperial_examination_pulse = {
+    on_actions = { iee_assistant_narrative_pulse }
+}
+iee_assistant_narrative_pulse = {
+    trigger = { iee_assistant_available_trigger = yes }
+    random_events = {
+        # Assistant pool: 35% chance during the shorter pre-exam phases.
+        chance_to_happen = 35
+        100 = iee_examination.0010 # Two Doors, One Queue
+        100 = iee_examination.0011 # The Measure of a Candle
+        100 = iee_examination.0012 # Names That Sound Alike
+        100 = iee_examination.0013 # The Courtyard Echo
+        100 = iee_examination.0014 # A Place for Every Bundle
+        100 = iee_examination.0015 # The Empty Water Jar
     }
 }

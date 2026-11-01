@@ -1,229 +1,1227 @@
-﻿namespace = iee_examination
+﻿# READING THIS FILE
+# Lines beginning with # are explanations; the game ignores them.
+# Each iee_examination.NUMBER block describes one encounter. Its title, story,
+# and button labels live in localization/english/iee_examination_l_english.yml.
+# A trigger is a checklist: all listed requirements must pass unless OR says
+# that any one is enough. NOT reverses a check. A scope names whose information
+# we are reading: root is the recipient, scope:activity is their examination.
+# immediate runs when the panel opens; option runs when its button is chosen.
+# Positive stress makes the character more stressed; negative stress relieves it.
+# Prestige is reputation and piety is religious standing; neither is exam score.
+# Character animations illustrate the scene; they do not add gameplay effects.
+# The original three encounters use Learning contests. The twelve additions
+# have fixed outcomes: their narrative choices do not secretly roll a skill check.
+# Trait-based stress adjustments are added to any ordinary stress change.
+# Three choices are defined per addition, but a paid choice is hidden when
+# the character cannot afford it. AI weights describe computer choices only.
+
+
+namespace = iee_examination
 
 # A request made during a supervised interval, not the sharing of live answers.
+# ========================================================================
+# 0001: A Passage Between Us
+# ========================================================================
+# WHO AND WHEN: A candidate physically present in an active local examination.
+# STORY: A fellow candidate asks about loyalty and obedience during a permitted break. Explain, listen, or rest.
+# Shared helpers are defined under common/scripted_triggers and common/scripted_effects.
+# Opinion rewards affect how the other person feels about the recipient.
+# Score rewards update both the phase score and cumulative examination score.
+# Actual score changes require the recipient to still be an eligible candidate.
 iee_examination.0001 = {
     type = activity_event
+    # Look up the title printed at the top of the panel.
     title = iee_examination.0001.t
+    # Look up the story text in the English localization file.
     desc = iee_examination.0001.desc
     theme = imperial_examination
+    # This recipient cannot receive this same event again for 12 months.
     cooldown = { months = 12 }
 
+    # All these conditions must hold before this event can be selected normally.
     trigger = {
+        # Require candidate role, active local exam, physical presence, no caught-cheating marker,
+        # and expiry of the shared 14-day break between mod encounters.
         iee_narrative_available_trigger = yes
+        # Prevent this recipient from seeing this encounter twice at the same examination.
         NOT = { var:iee_seen_passage ?= scope:activity }
+        # Require another living candidate who is still present and has not been caught cheating.
         iee_has_peer_trigger = yes
     }
+    # Adjust the relative chance of selecting this encounter among eligible events.
+    # This does not change the separate 20% chance to try the candidate pool.
     weight_multiplier = {
+        # Start at the normal selection multiplier of 1.
         base = 1
+        # Raise this event selection multiplier from 1 to 1.25 when the following condition holds.
         modifier = { add = 0.25 has_trait = patient }
     }
+    # Run these setup actions when the panel opens, before the player chooses.
     immediate = {
+        # Choose a valid fellow candidate and remember them as scope:iee_peer.
         iee_select_peer_effect = yes
+        # Remember this examination for the repetition check and start the shared 14-day gap.
         iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_passage }
     }
+    # Display the named character with this animation; the animation has no gameplay effect.
     left_portrait = { character = root animation = reading }
+    # Display the named character with this animation; the animation has no gameplay effect.
     right_portrait = { character = scope:iee_peer animation = worry }
 
     option = {
+        # BUTTON: Let us distinguish loyalty from mere obedience.
         name = iee_examination.0001.a
+        # Resolve a Learning-based chance of success or failure, not a physical duel.
+        # Only one of the two weighted outcome blocks runs. This awards no permanent skill points.
         duel = {
+            # Use the recipient's Learning to influence the outcome.
             skill = learning
+            # Compare against the game's standard skill benchmark, rather than another character's skill.
             value = decent_skill_rating
+            # Start this outcome with weight 50. The following adjustment changes its final chance.
             50 = {
+                # Adjust this outcome weight using the skill comparison; higher Learning favors success more.
+                # The adjustment cannot fall below -45, so a starting weight of 50 stays at least 5.
+                # These are relative weights, not a promise of a fixed 50% chance.
                 compare_modifier = { value = scope:duel_value multiplier = 3.5 min = -45 }
+                # Outcome explanation: Explaining the distinction clarifies your own reasoning and earns your fellow candidate's gratitude.
                 desc = iee_examination.0001.a.success
+                # Apply +2 to BOTH temporary_exam_score and imperial_examination_score.
+                # The helper checks eligibility again, initializes missing values safely, and shows a tooltip.
+                # It does not mark any vanilla examination paper as completed.
                 iee_adjust_performance_effect = { VALUE = 2 TOOLTIP = iee_score_gain_2_tt }
+                # Temporarily apply the nested relationship action to the selected fellow candidate.
                 scope:iee_peer = {
                     if = {
+                        # Recheck that this person is alive, present, and still eligible before changing their opinion.
                         limit = { iee_valid_peer_trigger = yes }
+                        # This person's opinion OF THE RECIPIENT changes by +10.
+                        # The opinion modifier fades toward zero by one point per month.
                         add_opinion = { target = root modifier = iee_patient_explanation_opinion }
                     }
                 }
             }
+            # Start this outcome with weight 50. The following adjustment changes its final chance.
             50 = {
+                # Adjust this outcome weight using the skill comparison; higher Learning favors failure less.
+                # The adjustment cannot fall below -45, so a starting weight of 50 stays at least 5.
+                # These are relative weights, not a promise of a fixed 50% chance.
                 compare_modifier = { value = scope:duel_value multiplier = -3.5 min = -45 }
+                # Outcome explanation: Your explanation wanders, leaving you more anxious about your own understanding.
                 desc = iee_examination.0001.a.failure
+                # Apply +5 stress to the recipient. Negative numbers mean relief.
                 add_stress = 5
             }
         }
+        # Additional personality adjustment: patient -5, compassionate -5.
+        # Only matching traits contribute; these adjustments sit outside the random outcome
+        # and therefore also apply whether a Learning attempt succeeds or fails.
         stress_and_fulfillment_impact = { patient = -5 compassionate = -5 }
+        # Computer-controlled recipients use these relative button preferences.
+        # Higher weights make a choice more likely; they do not alter player success odds.
         ai_chance = {
+            # Starting AI preference for this button; compare it with the other available buttons.
             base = 50
+            # Add this much to the AI button preference when the listed skill or trait condition holds.
             modifier = { add = 30 learning >= decent_skill_rating }
+            # Add this much to the AI button preference when the listed skill or trait condition holds.
             modifier = { add = 20 has_trait = compassionate }
         }
     }
     option = {
+        # BUTTON: I have doubts too. Let us listen to each other.
         name = iee_examination.0001.b
+        # Temporarily apply the nested relationship action to the selected fellow candidate.
         scope:iee_peer = {
             if = {
+                # Recheck that this person is alive, present, and still eligible before changing their opinion.
                 limit = { iee_valid_peer_trigger = yes }
+                # This person's opinion OF THE RECIPIENT changes by +5.
+                # The opinion modifier fades toward zero by one point per month.
                 add_opinion = { target = root modifier = iee_careful_observation_opinion }
             }
         }
+        # Apply +5 stress to the recipient. Negative numbers mean relief.
         add_stress = 5
+        # Additional personality adjustment: humble -5, impatient +5.
+        # Only matching traits contribute; these adjustments sit outside the random outcome
+        # and therefore also apply whether a Learning attempt succeeds or fails.
         stress_and_fulfillment_impact = { humble = -5 impatient = 5 }
+        # Computer-controlled recipients use these relative button preferences.
+        # Higher weights make a choice more likely; they do not alter player success odds.
         ai_chance = { base = 40 modifier = { add = 30 has_trait = humble } }
     }
     option = {
+        # BUTTON: Forgive me; I need these few moments to myself.
         name = iee_examination.0001.c
+        # Apply -5 stress to the recipient. Negative numbers mean relief.
         add_stress = -5
+        # Additional personality adjustment: compassionate +10, diligent -5.
+        # Only matching traits contribute; these adjustments sit outside the random outcome
+        # and therefore also apply whether a Learning attempt succeeds or fails.
         stress_and_fulfillment_impact = { compassionate = 10 diligent = -5 }
+        # Computer-controlled recipients use these relative button preferences.
+        # Higher weights make a choice more likely; they do not alter player success odds.
         ai_chance = { base = 30 modifier = { add = 30 has_trait = diligent } }
     }
 }
 
 # Suspicion alone must never apply vanilla's caught-cheating/disqualification flags.
+# ========================================================================
+# 0002: A Fold of Paper
+# ========================================================================
+# WHO AND WHEN: A candidate physically present in an active local examination.
+# STORY: A candidate drops a suspicious scrap. Alert the examiner, inspect it, or concentrate on your own work. No choice establishes cheating or disqualifies anyone.
+# Shared helpers are defined under common/scripted_triggers and common/scripted_effects.
+# Opinion rewards affect how the other person feels about the recipient.
+# Score rewards update both the phase score and cumulative examination score.
+# Actual score changes require the recipient to still be an eligible candidate.
 iee_examination.0002 = {
     type = activity_event
+    # Look up the title printed at the top of the panel.
     title = iee_examination.0002.t
+    # Look up the story text in the English localization file.
     desc = iee_examination.0002.desc
     theme = imperial_examination
+    # This recipient cannot receive this same event again for 12 months.
     cooldown = { months = 12 }
 
+    # All these conditions must hold before this event can be selected normally.
     trigger = {
+        # Require candidate role, active local exam, physical presence, no caught-cheating marker,
+        # and expiry of the shared 14-day break between mod encounters.
         iee_narrative_available_trigger = yes
+        # Prevent this recipient from seeing this encounter twice at the same examination.
         NOT = { var:iee_seen_suspicion ?= scope:activity }
+        # Require another living candidate who is still present and has not been caught cheating.
         iee_has_peer_trigger = yes
+        # Require another living examiner still present at this examination.
         iee_has_examiner_trigger = yes
     }
+    # Adjust the relative chance of selecting this encounter among eligible events.
+    # This does not change the separate 20% chance to try the candidate pool.
     weight_multiplier = {
+        # Start at the normal selection multiplier of 1.
         base = 1
+        # Raise this event selection multiplier from 1 to 1.25 when the following condition holds.
         modifier = { add = 0.25 has_trait = just }
     }
+    # Run these setup actions when the panel opens, before the player chooses.
     immediate = {
+        # Choose a valid fellow candidate and remember them as scope:iee_peer.
         iee_select_peer_effect = yes
+        # Choose a valid examiner and remember them as scope:iee_examiner.
         iee_select_examiner_effect = yes
+        # Remember this examination for the repetition check and start the shared 14-day gap.
         iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_suspicion }
     }
+    # Display the named character with this animation; the animation has no gameplay effect.
     left_portrait = { character = scope:iee_peer animation = worry }
+    # Display the named character with this animation; the animation has no gameplay effect.
     center_portrait = { character = root animation = interested }
+    # Display the named character with this animation; the animation has no gameplay effect.
     right_portrait = { character = scope:iee_examiner animation = stressed_teacher }
 
     option = {
+        # BUTTON: Let the examiner establish the facts, quietly.
         name = iee_examination.0002.a
+        # Display explanatory text only: a discreet inquiry does not establish guilt.
         custom_tooltip = iee_examination.0002.a.tt
+        # Temporarily apply the nested relationship action to the selected examiner.
         scope:iee_examiner = {
             if = {
+                # Recheck that this person is alive, present, and still eligible before changing their opinion.
                 limit = { iee_valid_examiner_trigger = yes }
+                # This person's opinion OF THE RECIPIENT changes by +5.
+                # The opinion modifier fades toward zero by one point per month.
                 add_opinion = { target = root modifier = iee_careful_observation_opinion }
             }
         }
+        # Apply +5 stress to the recipient. Negative numbers mean relief.
         add_stress = 5
+        # Additional personality adjustment: just -5, honest -5, shy +5.
+        # Only matching traits contribute; these adjustments sit outside the random outcome
+        # and therefore also apply whether a Learning attempt succeeds or fails.
         stress_and_fulfillment_impact = { just = -5 honest = -5 shy = 5 }
+        # Computer-controlled recipients use these relative button preferences.
+        # Higher weights make a choice more likely; they do not alter player success odds.
         ai_chance = {
+            # Starting AI preference for this button; compare it with the other available buttons.
             base = 50
+            # Add this much to the AI button preference when the listed skill or trait condition holds.
             modifier = { add = 30 has_trait = just }
+            # Add this much to the AI button preference when the listed skill or trait condition holds.
             modifier = { add = 20 has_trait = honest }
         }
     }
     option = {
+        # BUTTON: Look carefully before casting suspicion.
         name = iee_examination.0002.b
+        # Resolve a Learning-based chance of success or failure, not a physical duel.
+        # Only one of the two weighted outcome blocks runs. This awards no permanent skill points.
         duel = {
+            # Use the recipient's Learning to influence the outcome.
             skill = learning
+            # Compare against the game's standard skill benchmark, rather than another character's skill.
             value = decent_skill_rating
+            # Start this outcome with weight 50. The following adjustment changes its final chance.
             50 = {
+                # Adjust this outcome weight using the skill comparison; higher Learning favors success more.
+                # The adjustment cannot fall below -45, so a starting weight of 50 stays at least 5.
+                # These are relative weights, not a promise of a fixed 50% chance.
                 compare_modifier = { value = scope:duel_value multiplier = 3.5 min = -45 }
+                # Outcome explanation: You recognize a harmless household account and spare the candidate a public accusation.
                 desc = iee_examination.0002.b.success
+                # Temporarily apply the nested relationship action to the selected fellow candidate.
                 scope:iee_peer = {
                     if = {
+                        # Recheck that this person is alive, present, and still eligible before changing their opinion.
                         limit = { iee_valid_peer_trigger = yes }
+                        # This person's opinion OF THE RECIPIENT changes by +10.
+                        # The opinion modifier fades toward zero by one point per month.
                         add_opinion = { target = root modifier = iee_patient_explanation_opinion }
                     }
                 }
+                # Apply -5 stress to the recipient. Negative numbers mean relief.
                 add_stress = -5
             }
+            # Start this outcome with weight 50. The following adjustment changes its final chance.
             50 = {
+                # Adjust this outcome weight using the skill comparison; higher Learning favors failure less.
+                # The adjustment cannot fall below -45, so a starting weight of 50 stays at least 5.
+                # These are relative weights, not a promise of a fixed 50% chance.
                 compare_modifier = { value = scope:duel_value multiplier = -3.5 min = -45 }
+                # Outcome explanation: You cannot read the scrap, and the candidate notices your scrutiny.
                 desc = iee_examination.0002.b.failure
+                # Temporarily apply the nested relationship action to the selected fellow candidate.
                 scope:iee_peer = {
                     if = {
+                        # Recheck that this person is alive, present, and still eligible before changing their opinion.
                         limit = { iee_valid_peer_trigger = yes }
+                        # This person's opinion OF THE RECIPIENT changes by -10.
+                        # The opinion modifier fades toward zero by one point per month.
                         add_opinion = { target = root modifier = iee_unfounded_suspicion_opinion }
                     }
                 }
+                # Apply +5 stress to the recipient. Negative numbers mean relief.
                 add_stress = 5
             }
         }
+        # Computer-controlled recipients use these relative button preferences.
+        # Higher weights make a choice more likely; they do not alter player success odds.
         ai_chance = {
+            # Starting AI preference for this button; compare it with the other available buttons.
             base = 40
+            # Add this much to the AI button preference when the listed skill or trait condition holds.
             modifier = { add = 25 learning >= decent_skill_rating }
+            # Add this much to the AI button preference when the listed skill or trait condition holds.
             modifier = { add = 20 has_trait = compassionate }
         }
     }
     option = {
+        # BUTTON: The attendants have their duties; I have mine.
         name = iee_examination.0002.c
+        # Apply -5 stress to the recipient. Negative numbers mean relief.
         add_stress = -5
+        # Additional personality adjustment: just +10, honest +5, calm -5.
+        # Only matching traits contribute; these adjustments sit outside the random outcome
+        # and therefore also apply whether a Learning attempt succeeds or fails.
         stress_and_fulfillment_impact = { just = 10 honest = 5 calm = -5 }
+        # Computer-controlled recipients use these relative button preferences.
+        # Higher weights make a choice more likely; they do not alter player success odds.
         ai_chance = { base = 30 modifier = { add = 20 has_trait = calm } }
     }
 }
 
+# ========================================================================
+# 0003: A Word Out of Place
+# ========================================================================
+# WHO AND WHEN: A candidate physically present in an active local examination.
+# STORY: A question seems to misattribute a quotation. Challenge it, discuss both readings, or leave the disputed point aside.
+# Shared helpers are defined under common/scripted_triggers and common/scripted_effects.
+# Opinion rewards affect how the other person feels about the recipient.
+# Score rewards update both the phase score and cumulative examination score.
+# Actual score changes require the recipient to still be an eligible candidate.
 iee_examination.0003 = {
     type = activity_event
+    # Look up the title printed at the top of the panel.
     title = iee_examination.0003.t
+    # Look up the story text in the English localization file.
     desc = iee_examination.0003.desc
     theme = imperial_examination
+    # This recipient cannot receive this same event again for 12 months.
     cooldown = { months = 12 }
 
+    # All these conditions must hold before this event can be selected normally.
     trigger = {
+        # Require candidate role, active local exam, physical presence, no caught-cheating marker,
+        # and expiry of the shared 14-day break between mod encounters.
         iee_narrative_available_trigger = yes
+        # Prevent this recipient from seeing this encounter twice at the same examination.
         NOT = { var:iee_seen_question ?= scope:activity }
+        # Require another living examiner still present at this examination.
         iee_has_examiner_trigger = yes
     }
+    # Adjust the relative chance of selecting this encounter among eligible events.
+    # This does not change the separate 20% chance to try the candidate pool.
     weight_multiplier = {
+        # Start at the normal selection multiplier of 1.
         base = 1
+        # Raise this event selection multiplier from 1 to 1.25 when the following condition holds.
         modifier = { add = 0.25 learning >= high_skill_rating }
     }
+    # Run these setup actions when the panel opens, before the player chooses.
     immediate = {
+        # Choose a valid examiner and remember them as scope:iee_examiner.
         iee_select_examiner_effect = yes
+        # Remember this examination for the repetition check and start the shared 14-day gap.
         iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_question }
     }
+    # Display the named character with this animation; the animation has no gameplay effect.
     left_portrait = { character = root animation = reading }
+    # Display the named character with this animation; the animation has no gameplay effect.
     right_portrait = { character = scope:iee_examiner animation = stressed_teacher }
 
     option = {
+        # BUTTON: Respectfully identify the apparent error.
         name = iee_examination.0003.a
+        # Resolve a Learning-based chance of success or failure, not a physical duel.
+        # Only one of the two weighted outcome blocks runs. This awards no permanent skill points.
         duel = {
+            # Use the recipient's Learning to influence the outcome.
             skill = learning
+            # Compare against the game's higher skill benchmark, rather than another character's skill.
             value = high_skill_rating
+            # Start this outcome with weight 50. The following adjustment changes its final chance.
             50 = {
+                # Adjust this outcome weight using the skill comparison; higher Learning favors success more.
+                # The adjustment cannot fall below -45, so a starting weight of 50 stays at least 5.
+                # These are relative weights, not a promise of a fixed 50% chance.
                 compare_modifier = { value = scope:duel_value multiplier = 3.5 min = -45 }
+                # Outcome explanation: Your precise citation earns a clarification and strengthens your answer.
                 desc = iee_examination.0003.a.success
+                # Apply +2 to BOTH temporary_exam_score and imperial_examination_score.
+                # The helper checks eligibility again, initializes missing values safely, and shows a tooltip.
+                # It does not mark any vanilla examination paper as completed.
                 iee_adjust_performance_effect = { VALUE = 2 TOOLTIP = iee_score_gain_2_tt }
+                # Temporarily apply the nested relationship action to the selected examiner.
                 scope:iee_examiner = {
                     if = {
+                        # Recheck that this person is alive, present, and still eligible before changing their opinion.
                         limit = { iee_valid_examiner_trigger = yes }
+                        # This person's opinion OF THE RECIPIENT changes by +5.
+                        # The opinion modifier fades toward zero by one point per month.
                         add_opinion = { target = root modifier = iee_careful_observation_opinion }
                     }
                 }
             }
+            # Start this outcome with weight 50. The following adjustment changes its final chance.
             50 = {
+                # Adjust this outcome weight using the skill comparison; higher Learning favors failure less.
+                # The adjustment cannot fall below -45, so a starting weight of 50 stays at least 5.
+                # These are relative weights, not a promise of a fixed 50% chance.
                 compare_modifier = { value = scope:duel_value multiplier = -3.5 min = -45 }
+                # Outcome explanation: The examiner explains the distinction you overlooked; correcting your answer costs valuable time.
                 desc = iee_examination.0003.a.failure
+                # Apply -1 to BOTH temporary_exam_score and imperial_examination_score.
+                # The helper checks eligibility again, initializes missing values safely, and shows a tooltip.
+                # It does not mark any vanilla examination paper as completed.
                 iee_adjust_performance_effect = { VALUE = -1 TOOLTIP = iee_score_loss_1_tt }
+                # Apply +5 stress to the recipient. Negative numbers mean relief.
                 add_stress = 5
             }
         }
+        # Additional personality adjustment: honest -5, shy +5.
+        # Only matching traits contribute; these adjustments sit outside the random outcome
+        # and therefore also apply whether a Learning attempt succeeds or fails.
         stress_and_fulfillment_impact = { honest = -5 shy = 5 }
+        # Computer-controlled recipients use these relative button preferences.
+        # Higher weights make a choice more likely; they do not alter player success odds.
         ai_chance = {
+            # Starting AI preference for this button; compare it with the other available buttons.
             base = 40
+            # Add this much to the AI button preference when the listed skill or trait condition holds.
             modifier = { add = 40 learning >= high_skill_rating }
+            # Add this much to the AI button preference when the listed skill or trait condition holds.
             modifier = { add = 20 has_trait = honest }
         }
     }
     option = {
+        # BUTTON: Address both readings, however much work it takes.
         name = iee_examination.0003.b
+        # Apply +2 to BOTH temporary_exam_score and imperial_examination_score.
+        # The helper checks eligibility again, initializes missing values safely, and shows a tooltip.
+        # It does not mark any vanilla examination paper as completed.
         iee_adjust_performance_effect = { VALUE = 2 TOOLTIP = iee_score_gain_2_tt }
+        # Apply +10 stress to the recipient. Negative numbers mean relief.
         add_stress = 10
+        # Additional personality adjustment: diligent -5, impatient +5.
+        # Only matching traits contribute; these adjustments sit outside the random outcome
+        # and therefore also apply whether a Learning attempt succeeds or fails.
         stress_and_fulfillment_impact = { diligent = -5 impatient = 5 }
+        # Computer-controlled recipients use these relative button preferences.
+        # Higher weights make a choice more likely; they do not alter player success odds.
         ai_chance = { base = 50 modifier = { add = 25 has_trait = diligent } }
     }
     option = {
+        # BUTTON: Leave that point aside and finish what I know.
         name = iee_examination.0003.c
+        # Apply -1 to BOTH temporary_exam_score and imperial_examination_score.
+        # The helper checks eligibility again, initializes missing values safely, and shows a tooltip.
+        # It does not mark any vanilla examination paper as completed.
         iee_adjust_performance_effect = { VALUE = -1 TOOLTIP = iee_score_loss_1_tt }
+        # Apply -5 stress to the recipient. Negative numbers mean relief.
         add_stress = -5
+        # Additional personality adjustment: diligent +10, lazy -5.
+        # Only matching traits contribute; these adjustments sit outside the random outcome
+        # and therefore also apply whether a Learning attempt succeeds or fails.
         stress_and_fulfillment_impact = { diligent = 10 lazy = -5 }
+        # Computer-controlled recipients use these relative button preferences.
+        # Higher weights make a choice more likely; they do not alter player success odds.
         ai_chance = { base = 25 modifier = { add = 25 has_trait = lazy } }
+    }
+}
+
+# ========================================================================
+# 0004: The Rain Between the Lines
+# WHO AND WHEN: Candidate, during the active local examination.
+# STORY: Rain finds a crack above my desk. One drop spreads across a sentence, turning careful brushwork into a dark flower. The meaning remains legible, but a replacement sheet would mean copying everything again while the examination continues around me.
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0004 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0004.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0004.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared candidate checklist, including presence, role, phase, and spacing.
+        iee_narrative_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0004 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0004 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Copy the page before the stain spreads.
+        name = iee_examination.0004.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Mark the damaged line and continue on dry paper.
+        name = iee_examination.0004.b
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 5 prestige (reputation), not examination points.
+        add_prestige = 5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: The reader will have to judge the thought beneath the blot.
+        name = iee_examination.0004.c
+        # Immediately remove 5 stress for the recipient.
+        add_stress = -5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+}
+
+# ========================================================================
+# 0005: A Name I Must Not Write
+# WHO AND WHEN: Candidate, during the active local examination.
+# STORY: Halfway through a sentence, my brush pauses over a character used in an honored ancestor's personal name. At home, we substitute another character out of respect. Here, that substitution might obscure the quotation. How much explanation can a single unwritten word require?
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0005 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0005.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0005.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared candidate checklist, including presence, role, phase, and spacing.
+        iee_narrative_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0005 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0005 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Rephrase the entire sentence without losing its meaning.
+        name = iee_examination.0005.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Use the family substitution and explain it briefly.
+        name = iee_examination.0005.b
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 10 piety for the reflective or respectful response.
+        add_piety = 10
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Use the conventional wording of the examination text.
+        name = iee_examination.0005.c
+        # Immediately remove 5 stress for the recipient.
+        add_stress = -5
+        # Additional personality adjustment: zealous: +10. Applies only to characters with that trait.
+        stress_and_fulfillment_impact = { zealous = 10 }
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+}
+
+# ========================================================================
+# 0006: The Last Blank Space
+# WHO AND WHEN: Candidate, during the active local examination.
+# STORY: My argument reaches its conclusion before my allotted paper does. The empty space below looks almost accusatory. I could fill it with another example, yet every addition offers a new opportunity to contradict something I have already written.
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0006 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0006.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0006.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared candidate checklist, including presence, role, phase, and spacing.
+        iee_narrative_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0006 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0006 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Add a carefully chosen counterexample and answer it.
+        name = iee_examination.0006.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Use the space to make the conclusion easier to follow.
+        name = iee_examination.0006.b
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 5 prestige (reputation), not examination points.
+        add_prestige = 5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: A finished argument needs no ornamental tail.
+        name = iee_examination.0006.c
+        # Immediately remove 5 stress for the recipient.
+        add_stress = -5
+        # Additional personality adjustment: diligent: +5. Applies only to characters with that trait.
+        stress_and_fulfillment_impact = { diligent = 5 }
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+}
+
+# ========================================================================
+# 0007: The Borrowed Cadence
+# WHO AND WHEN: Candidate, during the active local examination.
+# STORY: Reading my answer silently, I hear my old teacher's voice in every sentence. The argument is my own, but even its pauses sound borrowed. I came here to demonstrate judgment; now I wonder whether I have merely learned to sound like someone who possesses it.
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0007 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0007.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0007.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared candidate checklist, including presence, role, phase, and spacing.
+        iee_narrative_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0007 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0007 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Rewrite the opening in my own plain language.
+        name = iee_examination.0007.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Acknowledge the school of thought that shaped my answer.
+        name = iee_examination.0007.b
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 10 piety for the reflective or respectful response.
+        add_piety = 10
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Good teaching deserves to leave an echo.
+        name = iee_examination.0007.c
+        # Immediately remove 5 stress for the recipient.
+        add_stress = -5
+        # Additional personality adjustment: humble: -5. Applies only to characters with that trait.
+        stress_and_fulfillment_impact = { humble = -5 }
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+}
+
+# ========================================================================
+# 0008: A Bell Beyond the Wall
+# WHO AND WHEN: Candidate, during the active local examination.
+# STORY: A funeral bell sounds beyond the compound wall. For a moment, the examination hall disappears beneath the memory of another procession, another day when ordinary work seemed impossible. Then a brush scratches nearby, and the room returns. My unfinished answer waits.
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0008 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0008.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0008.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared candidate checklist, including presence, role, phase, and spacing.
+        iee_narrative_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0008 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0008 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Let the feeling lend gravity to the conclusion.
+        name = iee_examination.0008.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 piety for the reflective or respectful response.
+        add_piety = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Pause for a silent observance, then return to work.
+        name = iee_examination.0008.b
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 10 piety for the reflective or respectful response.
+        add_piety = 10
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Count my breaths until the sound passes.
+        name = iee_examination.0008.c
+        # Immediately remove 5 stress for the recipient.
+        add_stress = -5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+}
+
+# ========================================================================
+# 0009: An Answer Without Ornament
+# WHO AND WHEN: Candidate, during the active local examination.
+# STORY: The question asks how an official should explain an order to ordinary households. My answer is elegant, densely allusive, and almost certainly incomprehensible to the people it concerns. Each polished phrase now seems to argue against the very advice I am giving.
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0009 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0009.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0009.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared candidate checklist, including presence, role, phase, and spacing.
+        iee_narrative_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0009 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0009 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Rewrite it as words I would actually say at a village gate.
+        name = iee_examination.0009.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Keep the argument, but add a plain-language example.
+        name = iee_examination.0009.b
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 5 prestige (reputation), not examination points.
+        add_prestige = 5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: The examiner will understand the scholarly convention.
+        name = iee_examination.0009.c
+        # Immediately remove 5 stress for the recipient.
+        add_stress = -5
+        # Additional personality adjustment: honest: +5. Applies only to characters with that trait.
+        stress_and_fulfillment_impact = { honest = 5 }
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+}
+
+# ========================================================================
+# 0010: Two Doors, One Queue
+# WHO AND WHEN: Assist Examination intent, during local assembly or preparation.
+# STORY: While helping arrange admissions, I find two streams of arrivals converging on a narrow doorway. Those carrying bedding cannot turn around, and those behind them cannot see the obstruction. Nobody is breaking a rule; the rules simply never imagined this many bundles.
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0010 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0010.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0010.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared assistant checklist; merely having passed an exam is not enough.
+        iee_assistant_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0010 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0010 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Walk the route and organize a separate return passage.
+        name = iee_examination.0010.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Stand at the junction and admit one group at a time.
+        name = iee_examination.0010.b
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 5 prestige (reputation), not examination points.
+        add_prestige = 5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Ask everyone to wait while the attendants clear the doorway.
+        name = iee_examination.0010.c
+        # Immediately remove 5 stress for the recipient.
+        add_stress = -5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+}
+
+# ========================================================================
+# 0011: The Measure of a Candle
+# WHO AND WHEN: Assist Examination intent, during local assembly or preparation.
+# STORY: The supplies laid out for the examination include candles of noticeably different thicknesses. Assigning them by bundle would leave some desks dim long before others. The discrepancy is small enough to overlook, and large enough that someone will suffer from it.
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0011 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0011.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0011.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared assistant checklist; merely having passed an exam is not enough.
+        iee_assistant_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0011 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0011 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Sort and redistribute every candle myself.
+        name = iee_examination.0011.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Buy a small reserve for desks that run short.
+        name = iee_examination.0011.b
+        # Show this paid button only when the recipient has at least 5 gold.
+        trigger = { gold >= 5 }
+        # Deduct 5 gold from the recipient to pay for the narrated supplies.
+        add_gold = -5
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Arrange for attendants to rotate the remaining lights.
+        name = iee_examination.0011.c
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 5 prestige (reputation), not examination points.
+        add_prestige = 5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+}
+
+# ========================================================================
+# 0012: Names That Sound Alike
+# WHO AND WHEN: Assist Examination intent, during local assembly or preparation.
+# STORY: Reading the admission list aloud produces two answers from opposite ends of the courtyard. The names sound alike in my pronunciation, though their written characters differ. If I hurry, a simple misunderstanding could follow both candidates all the way to their assigned desks.
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0012 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0012.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0012.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared assistant checklist; merely having passed an exam is not enough.
+        iee_assistant_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0012 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0012 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Compare each written entry with its bearer, carefully.
+        name = iee_examination.0012.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Display the written names beside the assigned places.
+        name = iee_examination.0012.b
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 5 prestige (reputation), not examination points.
+        add_prestige = 5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Ask the registration attendants to repeat the check.
+        name = iee_examination.0012.c
+        # Immediately remove 5 stress for the recipient.
+        add_stress = -5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+}
+
+# ========================================================================
+# 0013: The Courtyard Echo
+# WHO AND WHEN: Assist Examination intent, during local assembly or preparation.
+# STORY: While checking the examination rooms, I hear a whispered instruction return from the courtyard almost word for word. A handsome stone passage carries sound directly between two rows of desks. It would be unfair to blame candidates for hearing what the building insists on repeating.
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0013 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0013.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0013.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared assistant checklist; merely having passed an exam is not enough.
+        iee_assistant_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0013 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0013 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Test each position and rearrange the affected desks.
+        name = iee_examination.0013.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Pay for hanging mats to soften the echo.
+        name = iee_examination.0013.b
+        # Show this paid button only when the recipient has at least 5 gold.
+        trigger = { gold >= 5 }
+        # Deduct 5 gold from the recipient to pay for the narrated supplies.
+        add_gold = -5
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Move instructions into the courtyard before seating begins.
+        name = iee_examination.0013.c
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 5 prestige (reputation), not examination points.
+        add_prestige = 5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+}
+
+# ========================================================================
+# 0014: A Place for Every Bundle
+# WHO AND WHEN: Assist Examination intent, during local assembly or preparation.
+# STORY: The storage alcove is filling with candidates' bedding, spare shoes, and travel baskets. Several bundles look identical. An attendant proposes a neat stack, but neatness will be little comfort when tired travelers ask which possessions are theirs.
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0014 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0014.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0014.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared assistant checklist; merely having passed an exam is not enough.
+        iee_assistant_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0014 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0014 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Record a description and a numbered place for each bundle.
+        name = iee_examination.0014.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Purchase cord and tags for the whole alcove.
+        name = iee_examination.0014.b
+        # Show this paid button only when the recipient has at least 5 gold.
+        trigger = { gold >= 5 }
+        # Deduct 5 gold from the recipient to pay for the narrated supplies.
+        add_gold = -5
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Have each owner point out their place before leaving.
+        name = iee_examination.0014.c
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 5 prestige (reputation), not examination points.
+        add_prestige = 5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+}
+
+# ========================================================================
+# 0015: The Empty Water Jar
+# WHO AND WHEN: Assist Examination intent, during local assembly or preparation.
+# STORY: The jars outside the examination rooms have been filled, but nobody has planned how to replenish them once the corridors are occupied. Carrying water through the seated candidates would invite interruption and spills. The problem is still invisible to everyone who has not tried lifting a jar.
+# DESIGN: Small personal costs/rewards; no candidate score changes.
+# The described practical solution is narrative flavor. It does not
+# rearrange actual desks, supplies, admission records, or other guests.
+# ========================================================================
+iee_examination.0015 = {
+    type = activity_event
+    # Look up the heading shown at the top of the event panel.
+    title = iee_examination.0015.t
+    # Look up the story paragraph shown beneath the portraits.
+    desc = iee_examination.0015.desc
+    theme = imperial_examination
+    # This character cannot receive this same event again for 12 months.
+    cooldown = { months = 12 }
+    # Only offer this event when all the following eligibility checks pass.
+    trigger = {
+        # Shared assistant checklist; merely having passed an exam is not enough.
+        iee_assistant_available_trigger = yes
+        # Reject this event if this character already saw it at this examination.
+        NOT = { var:iee_seen_0015 ?= scope:activity }
+    }
+    # Record attendance at this encounter as soon as the panel opens.
+    immediate = {
+        # Remember this activity and start the shared 14-day gap between mod events.
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_0015 }
+    }
+    left_portrait = { character = root animation = thinking }
+    option = {
+        # BUTTON: Map a delivery route and carry the first reserve myself.
+        name = iee_examination.0015.a
+        # Immediately add 10 stress for the recipient.
+        add_stress = 10
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Pay for additional jars near the outer doors.
+        name = iee_examination.0015.b
+        # Show this paid button only when the recipient has at least 5 gold.
+        trigger = { gold >= 5 }
+        # Deduct 5 gold from the recipient to pay for the narrated supplies.
+        add_gold = -5
+        # Give the recipient 15 prestige (reputation), not examination points.
+        add_prestige = 15
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
+    }
+    option = {
+        # BUTTON: Assign staggered refills before the candidates are seated.
+        name = iee_examination.0015.c
+        # Immediately add 5 stress for the recipient.
+        add_stress = 5
+        # Give the recipient 5 prestige (reputation), not examination points.
+        add_prestige = 5
+        # Computer-controlled characters give each available button the same weight (40 is not 40%).
+        ai_chance = { base = 40 }
     }
 }
