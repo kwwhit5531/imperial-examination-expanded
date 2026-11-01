@@ -1,0 +1,58 @@
+﻿iee_select_peer_effect = {
+    scope:activity = {
+        random_guest_subset = {
+            name = entrants
+            limit = { iee_valid_peer_trigger = yes }
+            save_scope_as = iee_peer
+        }
+    }
+}
+
+iee_select_examiner_effect = {
+    scope:activity = {
+        random_guest_subset = {
+            name = imperial_examiners
+            limit = { iee_valid_examiner_trigger = yes }
+            save_scope_as = iee_examiner
+        }
+    }
+}
+
+# Keep a single activity reference per event per recipient. Overwritten only when
+# that event next occurs; no override of vanilla cleanup is needed.
+iee_mark_narrative_seen_effect = {
+    set_variable = {
+        name = $SEEN_VARIABLE$
+        value = scope:activity
+    }
+    add_character_flag = {
+        flag = iee_narrative_spacing
+        days = 14
+    }
+}
+
+# Mirrors the two-variable update in vanilla's file-local score helper (5522).
+# Changes are small narrative adjustments, not additional formal examinations.
+# Recheck the current activity in case an option is resolved after interruption.
+iee_adjust_performance_effect = {
+    if = {
+        limit = { iee_is_exam_candidate_trigger = yes }
+        custom_tooltip = $TOOLTIP$
+        hidden_effect = {
+            if = {
+                limit = { has_variable = temporary_exam_score }
+                change_variable = { name = temporary_exam_score add = $VALUE$ }
+            }
+            else = {
+                set_variable = { name = temporary_exam_score value = $VALUE$ }
+            }
+            if = {
+                limit = { has_variable = imperial_examination_score }
+                change_variable = { name = imperial_examination_score add = $VALUE$ }
+            }
+            else = {
+                set_variable = { name = imperial_examination_score value = $VALUE$ }
+            }
+        }
+    }
+}

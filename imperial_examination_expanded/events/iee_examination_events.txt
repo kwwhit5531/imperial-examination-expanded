@@ -1,0 +1,229 @@
+﻿namespace = iee_examination
+
+# A request made during a supervised interval, not the sharing of live answers.
+iee_examination.0001 = {
+    type = activity_event
+    title = iee_examination.0001.t
+    desc = iee_examination.0001.desc
+    theme = imperial_examination
+    cooldown = { months = 12 }
+
+    trigger = {
+        iee_narrative_available_trigger = yes
+        NOT = { var:iee_seen_passage ?= scope:activity }
+        iee_has_peer_trigger = yes
+    }
+    weight_multiplier = {
+        base = 1
+        modifier = { add = 0.25 has_trait = patient }
+    }
+    immediate = {
+        iee_select_peer_effect = yes
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_passage }
+    }
+    left_portrait = { character = root animation = reading }
+    right_portrait = { character = scope:iee_peer animation = worry }
+
+    option = {
+        name = iee_examination.0001.a
+        duel = {
+            skill = learning
+            value = decent_skill_rating
+            50 = {
+                compare_modifier = { value = scope:duel_value multiplier = 3.5 min = -45 }
+                desc = iee_examination.0001.a.success
+                iee_adjust_performance_effect = { VALUE = 2 TOOLTIP = iee_score_gain_2_tt }
+                scope:iee_peer = {
+                    if = {
+                        limit = { iee_valid_peer_trigger = yes }
+                        add_opinion = { target = root modifier = iee_patient_explanation_opinion }
+                    }
+                }
+            }
+            50 = {
+                compare_modifier = { value = scope:duel_value multiplier = -3.5 min = -45 }
+                desc = iee_examination.0001.a.failure
+                add_stress = 5
+            }
+        }
+        stress_and_fulfillment_impact = { patient = -5 compassionate = -5 }
+        ai_chance = {
+            base = 50
+            modifier = { add = 30 learning >= decent_skill_rating }
+            modifier = { add = 20 has_trait = compassionate }
+        }
+    }
+    option = {
+        name = iee_examination.0001.b
+        scope:iee_peer = {
+            if = {
+                limit = { iee_valid_peer_trigger = yes }
+                add_opinion = { target = root modifier = iee_careful_observation_opinion }
+            }
+        }
+        add_stress = 5
+        stress_and_fulfillment_impact = { humble = -5 impatient = 5 }
+        ai_chance = { base = 40 modifier = { add = 30 has_trait = humble } }
+    }
+    option = {
+        name = iee_examination.0001.c
+        add_stress = -5
+        stress_and_fulfillment_impact = { compassionate = 10 diligent = -5 }
+        ai_chance = { base = 30 modifier = { add = 30 has_trait = diligent } }
+    }
+}
+
+# Suspicion alone must never apply vanilla's caught-cheating/disqualification flags.
+iee_examination.0002 = {
+    type = activity_event
+    title = iee_examination.0002.t
+    desc = iee_examination.0002.desc
+    theme = imperial_examination
+    cooldown = { months = 12 }
+
+    trigger = {
+        iee_narrative_available_trigger = yes
+        NOT = { var:iee_seen_suspicion ?= scope:activity }
+        iee_has_peer_trigger = yes
+        iee_has_examiner_trigger = yes
+    }
+    weight_multiplier = {
+        base = 1
+        modifier = { add = 0.25 has_trait = just }
+    }
+    immediate = {
+        iee_select_peer_effect = yes
+        iee_select_examiner_effect = yes
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_suspicion }
+    }
+    left_portrait = { character = scope:iee_peer animation = worry }
+    center_portrait = { character = root animation = interested }
+    right_portrait = { character = scope:iee_examiner animation = stressed_teacher }
+
+    option = {
+        name = iee_examination.0002.a
+        custom_tooltip = iee_examination.0002.a.tt
+        scope:iee_examiner = {
+            if = {
+                limit = { iee_valid_examiner_trigger = yes }
+                add_opinion = { target = root modifier = iee_careful_observation_opinion }
+            }
+        }
+        add_stress = 5
+        stress_and_fulfillment_impact = { just = -5 honest = -5 shy = 5 }
+        ai_chance = {
+            base = 50
+            modifier = { add = 30 has_trait = just }
+            modifier = { add = 20 has_trait = honest }
+        }
+    }
+    option = {
+        name = iee_examination.0002.b
+        duel = {
+            skill = learning
+            value = decent_skill_rating
+            50 = {
+                compare_modifier = { value = scope:duel_value multiplier = 3.5 min = -45 }
+                desc = iee_examination.0002.b.success
+                scope:iee_peer = {
+                    if = {
+                        limit = { iee_valid_peer_trigger = yes }
+                        add_opinion = { target = root modifier = iee_patient_explanation_opinion }
+                    }
+                }
+                add_stress = -5
+            }
+            50 = {
+                compare_modifier = { value = scope:duel_value multiplier = -3.5 min = -45 }
+                desc = iee_examination.0002.b.failure
+                scope:iee_peer = {
+                    if = {
+                        limit = { iee_valid_peer_trigger = yes }
+                        add_opinion = { target = root modifier = iee_unfounded_suspicion_opinion }
+                    }
+                }
+                add_stress = 5
+            }
+        }
+        ai_chance = {
+            base = 40
+            modifier = { add = 25 learning >= decent_skill_rating }
+            modifier = { add = 20 has_trait = compassionate }
+        }
+    }
+    option = {
+        name = iee_examination.0002.c
+        add_stress = -5
+        stress_and_fulfillment_impact = { just = 10 honest = 5 calm = -5 }
+        ai_chance = { base = 30 modifier = { add = 20 has_trait = calm } }
+    }
+}
+
+iee_examination.0003 = {
+    type = activity_event
+    title = iee_examination.0003.t
+    desc = iee_examination.0003.desc
+    theme = imperial_examination
+    cooldown = { months = 12 }
+
+    trigger = {
+        iee_narrative_available_trigger = yes
+        NOT = { var:iee_seen_question ?= scope:activity }
+        iee_has_examiner_trigger = yes
+    }
+    weight_multiplier = {
+        base = 1
+        modifier = { add = 0.25 learning >= high_skill_rating }
+    }
+    immediate = {
+        iee_select_examiner_effect = yes
+        iee_mark_narrative_seen_effect = { SEEN_VARIABLE = iee_seen_question }
+    }
+    left_portrait = { character = root animation = reading }
+    right_portrait = { character = scope:iee_examiner animation = stressed_teacher }
+
+    option = {
+        name = iee_examination.0003.a
+        duel = {
+            skill = learning
+            value = high_skill_rating
+            50 = {
+                compare_modifier = { value = scope:duel_value multiplier = 3.5 min = -45 }
+                desc = iee_examination.0003.a.success
+                iee_adjust_performance_effect = { VALUE = 2 TOOLTIP = iee_score_gain_2_tt }
+                scope:iee_examiner = {
+                    if = {
+                        limit = { iee_valid_examiner_trigger = yes }
+                        add_opinion = { target = root modifier = iee_careful_observation_opinion }
+                    }
+                }
+            }
+            50 = {
+                compare_modifier = { value = scope:duel_value multiplier = -3.5 min = -45 }
+                desc = iee_examination.0003.a.failure
+                iee_adjust_performance_effect = { VALUE = -1 TOOLTIP = iee_score_loss_1_tt }
+                add_stress = 5
+            }
+        }
+        stress_and_fulfillment_impact = { honest = -5 shy = 5 }
+        ai_chance = {
+            base = 40
+            modifier = { add = 40 learning >= high_skill_rating }
+            modifier = { add = 20 has_trait = honest }
+        }
+    }
+    option = {
+        name = iee_examination.0003.b
+        iee_adjust_performance_effect = { VALUE = 2 TOOLTIP = iee_score_gain_2_tt }
+        add_stress = 10
+        stress_and_fulfillment_impact = { diligent = -5 impatient = 5 }
+        ai_chance = { base = 50 modifier = { add = 25 has_trait = diligent } }
+    }
+    option = {
+        name = iee_examination.0003.c
+        iee_adjust_performance_effect = { VALUE = -1 TOOLTIP = iee_score_loss_1_tt }
+        add_stress = -5
+        stress_and_fulfillment_impact = { diligent = 10 lazy = -5 }
+        ai_chance = { base = 25 modifier = { add = 25 has_trait = lazy } }
+    }
+}

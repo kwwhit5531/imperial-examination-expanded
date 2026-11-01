@@ -1,0 +1,9 @@
+{
+  "date": "2026-10-31",
+  "package": "Imperial_Examination_Expanded_Prototype_0.1.0.zip",
+  "sha256": "80074014a6d48546497cfb10e9abaf5819802d4639542164903d3a37766f1332",
+  "source_files": 11,
+  "structural_check": "PASS",
+  "clean_startup_evidence": "startup_evidence.txt",
+  "full_gameplay_gate": "PENDING"
+}

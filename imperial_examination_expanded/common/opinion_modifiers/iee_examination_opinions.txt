@@ -1,0 +1,17 @@
+﻿iee_patient_explanation_opinion = {
+    opinion = 10
+    decaying = yes
+    monthly_change = 1
+}
+
+iee_unfounded_suspicion_opinion = {
+    opinion = -10
+    decaying = yes
+    monthly_change = 1
+}
+
+iee_careful_observation_opinion = {
+    opinion = 5
+    decaying = yes
+    monthly_change = 1
+}

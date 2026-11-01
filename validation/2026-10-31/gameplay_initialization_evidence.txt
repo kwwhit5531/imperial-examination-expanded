@@ -1,0 +1,5 @@
+[18:43:36][D][jomini_eventmanager.cpp:619]: Loaded [3] events from 'events/iee_examination_events.txt' 
+[18:44:27][I][gamestate.cpp:1208]: Completed running through history.
+[18:44:36][D][gameapplication.cpp:583]: Setting idler 'In Game' with init options
+Observed through game UI: paused 1066-09-15 Qin Guan world; vanilla opening events; no ongoing activity.
+Controlled engine and option tests not executed.

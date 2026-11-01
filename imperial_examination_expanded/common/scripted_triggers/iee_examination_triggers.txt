@@ -1,0 +1,60 @@
+﻿# ROOT/this: candidate. scope:activity comes from the vanilla activity callback.
+# This is the single tier/phase gate to broaden after the local prototype passes.
+iee_is_exam_candidate_trigger = {
+    has_tgp_dlc_trigger = yes
+    is_alive = yes
+    exists = scope:activity
+    involved_activity ?= scope:activity
+    location = scope:activity.activity_location
+    is_in_guest_subset = { name = entrants }
+    has_activity_intent = local_exam_taker_intent
+    scope:activity = {
+        has_activity_type = activity_local_examination
+        has_current_phase = local_examination_phase_examination
+        is_current_phase_active = yes
+    }
+}
+
+iee_narrative_available_trigger = {
+    iee_is_exam_candidate_trigger = yes
+    NOT = { has_character_flag = iee_narrative_spacing }
+    NOT = { has_variable = been_caught_cheating }
+}
+
+# Current character is the prospective peer/examiner; ROOT remains the recipient.
+# Guest lists may contain characters who have already left the activity.
+iee_valid_other_attendee_trigger = {
+    this != root
+    is_alive = yes
+    involved_activity ?= scope:activity
+    location = scope:activity.activity_location
+}
+
+iee_valid_peer_trigger = {
+    iee_valid_other_attendee_trigger = yes
+    is_in_guest_subset = { name = entrants }
+    NOT = { has_variable = been_caught_cheating }
+}
+
+iee_valid_examiner_trigger = {
+    iee_valid_other_attendee_trigger = yes
+    is_in_guest_subset = { name = imperial_examiners }
+}
+
+iee_has_peer_trigger = {
+    scope:activity = {
+        any_guest_subset = {
+            name = entrants
+            iee_valid_peer_trigger = yes
+        }
+    }
+}
+
+iee_has_examiner_trigger = {
+    scope:activity = {
+        any_guest_subset = {
+            name = imperial_examiners
+            iee_valid_examiner_trigger = yes
+        }
+    }
+}

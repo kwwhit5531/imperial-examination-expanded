@@ -1,0 +1,24 @@
+﻿# Run before joining an activity in a fresh 1066 Qin Guan test game:
+# scripted_tests iee_outside_activity
+# Uses the installed tests/_tests.info format. Does not trigger a narrative.
+iee_outside_activity_rejects_narratives_and_score_changes = {
+    character_target = han_30000
+    assert = {
+        is_alive = yes
+        NOT = { exists = involved_activity }
+        NOT = { has_variable = temporary_exam_score }
+        NOT = { has_variable = imperial_examination_score }
+    }
+    expect = {
+        NOT = { iee_is_exam_candidate_trigger = yes }
+        NOT = { iee_narrative_available_trigger = yes }
+    }
+    effect = {
+        iee_adjust_performance_effect = { VALUE = 2 TOOLTIP = iee_score_gain_2_tt }
+        iee_adjust_performance_effect = { VALUE = -1 TOOLTIP = iee_score_loss_1_tt }
+    }
+    expect = {
+        NOT = { has_variable = temporary_exam_score }
+        NOT = { has_variable = imperial_examination_score }
+    }
+}

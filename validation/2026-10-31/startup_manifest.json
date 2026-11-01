@@ -1,0 +1,18 @@
+{
+  "target": "CK3 1.20.1.2 (Crozier), Steam build 26046173",
+  "date": "2026-10-31",
+  "corrected_startup_error_log_bytes": 0,
+  "loaded_event_count": 3,
+  "mod_file_sha256": {
+    "imperial_examination_expanded/common/on_action/iee_examination_on_actions.txt": "52ce7d60a8e6e988a43f47e6bf68c198c7b1661cf2d3041ed01307c2b2837696",
+    "imperial_examination_expanded/common/opinion_modifiers/iee_examination_opinions.txt": "f8308b9929917acbf20dae24a71831ee0c408828549192c58ff26543353b50e8",
+    "imperial_examination_expanded/common/scripted_effects/iee_examination_effects.txt": "e92df96f2f30907663985fdab0ed079646d6c0f82c90ac5ed5fa165a10ecdd7d",
+    "imperial_examination_expanded/common/scripted_triggers/iee_examination_triggers.txt": "2762b71b36fc84ae2f1d34d64540b6ab13b4b89d2fb190b458769a32fe5dbf31",
+    "imperial_examination_expanded/descriptor.mod": "8adf5984875646d9c117c89a549852dd97d85f8623870788ec88887474fc49a6",
+    "imperial_examination_expanded/events/iee_examination_events.txt": "cfe04ba2219c9069e71c51a126994a595daeebb5a341ce4970d7c728a4ae9f63",
+    "imperial_examination_expanded/localization/english/iee_examination_l_english.yml": "e5e2b84391fa45ff1173bd86d84f24a033d43a199c87a3c25eb9c9cdba193f0f"
+  },
+  "limits": [
+    "Startup only; natural dispatch, all option outcomes and repeated-activity checks require gameplay validation."
+  ]
+}

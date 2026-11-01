@@ -1,0 +1,7 @@
+All Under Heaven|dlc/dlc022_ep4/dlc022.dlc
+Imperial Examination Expanded — Prototype|mod/imperial_examination_expanded.mod|Enabled
+[18:39:32][D][virtualfilesystem_physfs.cpp:814]: Mounted Data: C:/Program Files (x86)/Steam/steamapps/common/Crusader Kings III/game/dlc/dlc022_ep4
+[18:39:32][D][virtualfilesystem_physfs.cpp:814]: Mounted Data: C:/Users/kwwhi/Documents/ChatGPT/CK3/imperial_examination_expanded
+[18:40:37][D][jomini_eventmanager.cpp:619]: Loaded [3] events from 'events/iee_examination_events.txt' 
+[18:41:44][D][history.cpp:1543]: End loading of history
+error.log bytes: 0

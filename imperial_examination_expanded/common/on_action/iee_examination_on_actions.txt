@@ -1,0 +1,15 @@
+﻿# Additive extension, as documented in vanilla common/on_action/_on_actions.info.
+# Do not replace the vanilla random_events block: it contains formal exam papers.
+imperial_examination_exam_entrant_events = {
+    on_actions = { iee_examination_narrative_pulse }
+}
+
+iee_examination_narrative_pulse = {
+    trigger = { iee_narrative_available_trigger = yes }
+    random_events = {
+        chance_to_happen = 20
+        100 = iee_examination.0001
+        100 = iee_examination.0002
+        100 = iee_examination.0003
+    }
+}
